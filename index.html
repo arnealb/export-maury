@@ -6,6 +6,7 @@
 <title>Exportfactuur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   :root{
     --paper:#FBF7EF;
@@ -44,6 +45,7 @@
     margin:0 auto 14px;
     flex-wrap:wrap;
   }
+  .toolbar-right{display:flex;gap:8px;flex-wrap:wrap;}
   .toolbar-left{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .shop-select, .lang-select{
     display:flex;
@@ -340,17 +342,16 @@
 
   <div class="toolbar">
     <div class="toolbar-left">
-      <div class="shop-select" id="shopSelect">
-        <button data-shop="maury" class="active">Maury</button>
-        <button data-shop="timcoast">Timcoast</button>
-      </div>
       <div class="lang-select" id="langSelect">
         <button data-lang="nl" class="active">NL</button>
         <button data-lang="fr">FR</button>
         <button data-lang="en">EN</button>
       </div>
     </div>
-    <button class="print-btn" id="printBtn" onclick="window.print()">Afdrukken / PDF</button>
+    <div class="toolbar-right">
+      <button class="print-btn" id="printOnlyBtn" onclick="window.print()">Afdrukken</button>
+      <button class="print-btn" id="printBtn" onclick="downloadPdf()">PDF downloaden</button>
+    </div>
   </div>
 
   <div class="sheet">
@@ -452,17 +453,17 @@
 
 <script>
   const translations = {
-    nl:{docKind:"Exportfactuur", print:"Afdrukken / PDF", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
+    nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
         straat:"Straat en huisnummer", postcode:"Postcode", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
         thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
         vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
         naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
-    fr:{docKind:"Facture export", print:"Imprimer / PDF", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
+    fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
         straat:"Rue et numéro", postcode:"Code postal", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
         thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
         vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", bankTitle:"Remboursement TVA (compte bancaire)",
         naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
-    en:{docKind:"Export invoice", print:"Print / PDF", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
+    en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
         straat:"Street and number", postcode:"Postal code", stad:"City", land:"Country", artikelen:"Items sold",
         thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
         vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", bankTitle:"VAT refund (bank account)",
@@ -476,6 +477,7 @@
     const t = translations[lang];
     document.getElementById('docKind').textContent = t.docKind;
     document.getElementById('printBtn').textContent = t.print;
+    document.getElementById('printOnlyBtn').textContent = t.printOnly;
     document.getElementById('lblKlantgegevens').textContent = t.klantgegevens;
     document.getElementById('lblNaam').textContent = t.naam;
     document.getElementById('lblPaspoort').textContent = t.paspoort;
@@ -506,48 +508,26 @@
     applyLang(btn.dataset.lang);
   });
 
-  const shops = {
-    maury: {
-      name: "schoenhandel albrecht bv",
-      addressHtml: "Lippenslaan 338<br>B-8300 Knokke-Heist<br>info@maury.be — www.maury.be<br>BTW BE 405.160.090",
-      footer: "www.maury.be",
-      prefix: "MRY"
-    },
-    timcoast: {
-      name: "timcoast bv",
-      addressHtml: "Lippenslaan 338<br>B-8300 Knokke-Heist<br>BTW BE 867.736.165",
-      footer: "Timberland — Zilverpand 10, 8000 Brugge — 050/34.79.34",
-      prefix: "TMC"
-    }
+  const shopData = {
+    name: "schoenhandel albrecht bv",
+    addressHtml: "Lippenslaan 338<br>B-8300 Knokke-Heist<br>info@maury.be — www.maury.be<br>BTW BE 405.160.090",
+    footer: "www.maury.be",
+    prefix: "MRY"
   };
 
-  let currentShop = "maury";
-
-  function generateInvoiceNumber(shopKey){
-    const prefix = shops[shopKey].prefix;
+  function generateInvoiceNumber(){
     const now = new Date();
     const y = now.getFullYear();
     const rand = Math.floor(10000 + Math.random()*89999);
-    return `${prefix}-${y}-${rand}`;
+    return `${shopData.prefix}-${y}-${rand}`;
   }
 
-  function applyShop(shopKey){
-    currentShop = shopKey;
-    const s = shops[shopKey];
-    document.getElementById('companyName').textContent = s.name;
-    document.getElementById('companyAddress').innerHTML = s.addressHtml;
-    document.getElementById('footerLine').textContent = s.footer;
-    document.getElementById('invoiceNumber').textContent = generateInvoiceNumber(shopKey);
-    document.querySelectorAll('#shopSelect button').forEach(b=>{
-      b.classList.toggle('active', b.dataset.shop===shopKey);
-    });
+  function applyShop(){
+    document.getElementById('companyName').textContent = shopData.name;
+    document.getElementById('companyAddress').innerHTML = shopData.addressHtml;
+    document.getElementById('footerLine').textContent = shopData.footer;
+    document.getElementById('invoiceNumber').textContent = generateInvoiceNumber();
   }
-
-  document.getElementById('shopSelect').addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-shop]');
-    if(!btn) return;
-    applyShop(btn.dataset.shop);
-  });
 
   const dateInput = document.getElementById('invoiceDate');
   dateInput.value = new Date().toISOString().slice(0,10);
@@ -590,7 +570,7 @@
 
   document.getElementById('addRow').addEventListener('click', ()=>addRow(true));
 
-  // hide empty address fields when printing
+  // hide empty address fields for the exported PDF
   const addressFieldIds = ['fieldStreet','fieldPostal','fieldCity','fieldCountry'];
   const addressInputMap = {fieldStreet:'custStreet', fieldPostal:'custPostal', fieldCity:'custCity', fieldCountry:'custCountry'};
 
@@ -598,20 +578,36 @@
     addressFieldIds.forEach(fid=>{
       const wrap = document.getElementById(fid);
       const input = document.getElementById(addressInputMap[fid]);
-      if(!input.value.trim()){
-        wrap.classList.add('print-hide');
-      }
+      if(!input.value.trim()) wrap.classList.add('print-hide');
     });
   });
   window.addEventListener('afterprint', ()=>{
-    addressFieldIds.forEach(fid=>{
-      document.getElementById(fid).classList.remove('print-hide');
-    });
+    addressFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
   });
+
+  function downloadPdf(){
+    addressFieldIds.forEach(fid=>{
+      const wrap = document.getElementById(fid);
+      const input = document.getElementById(addressInputMap[fid]);
+      wrap.classList.toggle('print-hide', !input.value.trim());
+    });
+    const el = document.querySelector('.sheet');
+    const invNr = document.getElementById('invoiceNumber').textContent.trim().replace(/\s+/g,'-');
+    const opts = {
+      margin: 0,
+      filename: `exportfactuur-${invNr}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opts).from(el).save().then(()=>{
+      addressFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
+    });
+  }
 
   // init
   applyLang('nl');
-  applyShop('maury');
+  applyShop();
   addRow(false);
   addRow(false);
   recalc();
