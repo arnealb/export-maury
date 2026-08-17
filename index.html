@@ -6,7 +6,6 @@
 <title>Exportfactuur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   :root{
     --paper:#FBF7EF;
@@ -156,7 +155,7 @@
   }
 
   .section{
-    padding:26px 44px;
+    padding:18px 44px;
     border-bottom:1px dashed var(--line);
   }
   .section:last-of-type{border-bottom:none;}
@@ -211,7 +210,7 @@
   }
   table.items th.num, table.items td.num{text-align:right;}
   table.items td{
-    padding:9px 4px;
+    padding:4px 4px;
     border-bottom:1px dotted var(--line);
     vertical-align:middle;
   }
@@ -364,6 +363,25 @@
     letter-spacing:.05em;
   }
 
+  .signature-section{padding-top:14px;padding-bottom:14px;}
+  .signature-box{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:16px 20px 12px;
+  }
+  .signature-cell{display:flex;flex-direction:column;gap:28px;}
+  .signature-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .signature-line{border-bottom:1px solid var(--line);height:1px;}
+
   @media (max-width:640px){
     .field-grid{grid-template-columns:1fr;}
     .head{flex-direction:column;}
@@ -374,6 +392,9 @@
     .totals .line{width:100%;font-size:16px;gap:12px;}
   }
 
+  @page{
+    margin:8mm;
+  }
   @media print{
     *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important;}
     body{background:#fff;padding:0;}
@@ -381,6 +402,13 @@
     .sheet{border:none;box-shadow:none;max-width:100%;background:#fff;}
     .row-remove, .add-row{display:none !important;}
     .field input, .field select, table.items input{border-bottom:1px solid var(--line);}
+    .head{padding:0 0 12px;}
+    .section{padding:10px 0;}
+    .footer{padding:10px 0 0;}
+    .signature-section{padding-top:8px;padding-bottom:0;}
+    table.items td{padding:2px 4px;}
+    .field-grid{gap:8px 16px;}
+    .totals{margin-top:10px;gap:4px;}
   }
   .print-hide{display:none !important;}
   .pdf-white-bg, .pdf-white-bg .section, .pdf-white-bg .head{background:#fff !important;}
@@ -405,17 +433,9 @@
 <body>
 
   <div class="toolbar">
-    <div class="toolbar-left">
-      <div class="lang-select" id="langSelect">
-        <button data-lang="nl" class="active">NL</button>
-        <button data-lang="fr">FR</button>
-        <button data-lang="en">EN</button>
-      </div>
-    </div>
-    <div class="toolbar-right">
+    <div class="toolbar-right" style="margin-left:auto;">
       <button class="print-btn secondary-btn" id="newInvoiceBtn" onclick="startNewInvoice()">Nieuwe factuur</button>
       <button class="print-btn" id="printOnlyBtn" onclick="handlePrint()">Afdrukken</button>
-      <button class="print-btn" id="printBtn" onclick="downloadPdf()">PDF downloaden</button>
     </div>
   </div>
 
@@ -450,10 +470,6 @@
         <div class="field" id="fieldPassport">
           <label id="lblPaspoort" for="custPassport">Paspoort nr</label>
           <input type="text" id="custPassport">
-        </div>
-        <div class="field full" id="fieldStreet">
-          <label id="lblStraat" for="custStreet">Adres</label>
-          <input type="text" id="custStreet">
         </div>
         <div class="field" id="fieldCity">
           <label id="lblStad" for="custCity">Stad</label>
@@ -511,26 +527,39 @@
       </div>
     </div>
 
+    <div class="section signature-section">
+      <div class="signature-box">
+        <div class="signature-cell">
+          <span class="signature-label" id="lblSigName">Naam</span>
+          <div class="signature-line"></div>
+        </div>
+        <div class="signature-cell">
+          <span class="signature-label" id="lblSigSign">Handtekening</span>
+          <div class="signature-line"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="footer" id="footerLine">www.maury.be</div>
   </div>
 
 <script>
   const translations = {
     nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", newInvoice:"Nieuwe factuur", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
-        straat:"Adres", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen", naamError:"Vul de naam van de klant in",
+        stad:"Stad", land:"Land", artikelen:"Verkochte artikelen", naamError:"Vul de naam van de klant in",
         thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
         vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", nietBetaald:"Niet betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
-        naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
+        naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant", sigName:"Naam", sigSign:"Handtekening"},
     fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", newInvoice:"Nouvelle facture", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
-        straat:"Adresse", stad:"Ville", land:"Pays", artikelen:"Articles vendus", naamError:"Veuillez indiquer le nom du client",
+        stad:"Ville", land:"Pays", artikelen:"Articles vendus", naamError:"Veuillez indiquer le nom du client",
         thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
         vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", nietBetaald:"Non payé", bankTitle:"Remboursement TVA (compte bancaire)",
-        naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
+        naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client", sigName:"Nom", sigSign:"Signature"},
     en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", newInvoice:"New invoice", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
-        straat:"Address", stad:"City", land:"Country", artikelen:"Items sold", naamError:"Please enter the customer's name",
+        stad:"City", land:"Country", artikelen:"Items sold", naamError:"Please enter the customer's name",
         thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
         vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", nietBetaald:"Not paid", bankTitle:"VAT refund (bank account)",
-        naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email"}
+        naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email", sigName:"Name", sigSign:"Signature"}
   };
 
   let currentLang = "nl";
@@ -539,14 +568,12 @@
     currentLang = lang;
     const t = translations[lang];
     document.getElementById('docKind').textContent = t.docKind;
-    document.getElementById('printBtn').textContent = t.print;
     document.getElementById('printOnlyBtn').textContent = t.printOnly;
     document.getElementById('newInvoiceBtn').textContent = t.newInvoice;
     document.getElementById('naamError').textContent = t.naamError;
     document.getElementById('lblKlantgegevens').textContent = t.klantgegevens;
     document.getElementById('lblNaam').textContent = t.naam;
     document.getElementById('lblPaspoort').textContent = t.paspoort;
-    document.getElementById('lblStraat').textContent = t.straat;
     document.getElementById('lblStad').textContent = t.stad;
     document.getElementById('lblLand').textContent = t.land;
     document.getElementById('lblArtikelen').textContent = t.artikelen;
@@ -562,15 +589,11 @@
     document.getElementById('lblIban').textContent = t.iban;
     document.getElementById('lblSwift').textContent = t.swift;
     document.getElementById('lblEmailKlant').textContent = t.emailKlant;
+    document.getElementById('lblSigName').textContent = t.sigName;
+    document.getElementById('lblSigSign').textContent = t.sigSign;
     document.querySelectorAll('#itemsBody .desc-input').forEach(inp=>inp.placeholder = t.artikelPh);
-    document.querySelectorAll('#langSelect button').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
   }
 
-  document.getElementById('langSelect').addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-lang]');
-    if(!btn) return;
-    applyLang(btn.dataset.lang);
-  });
 
   const shopData = {
     name: "schoenhandel albrecht bv",
@@ -647,8 +670,8 @@
   document.getElementById('addRow').addEventListener('click', ()=>addRow(true));
 
   // hide empty client fields and empty item rows in the exported PDF
-  const clientFieldIds = ['fieldNaam','fieldPassport','fieldStreet','fieldCity','fieldCountry'];
-  const clientInputMap = {fieldNaam:'custName', fieldPassport:'custPassport', fieldStreet:'custStreet', fieldCity:'custCity', fieldCountry:'custCountry'};
+  const clientFieldIds = ['fieldNaam','fieldPassport','fieldCity','fieldCountry'];
+  const clientInputMap = {fieldNaam:'custName', fieldPassport:'custPassport', fieldCity:'custCity', fieldCountry:'custCountry'};
 
   window.addEventListener('beforeprint', ()=>{
     clientFieldIds.forEach(fid=>{
@@ -690,7 +713,6 @@
   function startNewInvoice(){
     document.getElementById('custName').value = '';
     document.getElementById('custPassport').value = '';
-    document.getElementById('custStreet').value = '';
     document.getElementById('custCity').value = '';
     document.getElementById('custCountry').value = '';
     document.getElementById('fieldNaam').classList.remove('error');
@@ -701,40 +723,6 @@
     document.getElementById('invoiceDate').value = new Date().toISOString().slice(0,10);
     applyShop();
     document.getElementById('custName').focus();
-  }
-
-  function downloadPdf(){
-    if(!validateForm()) return;
-    clientFieldIds.forEach(fid=>{
-      const wrap = document.getElementById(fid);
-      const input = document.getElementById(clientInputMap[fid]);
-      wrap.classList.toggle('print-hide', !input.value.trim());
-    });
-    const emptyRows = [];
-    itemsBody.querySelectorAll('tr').forEach(tr=>{
-      const desc = tr.querySelector('.desc-input').value.trim();
-      const price = tr.querySelector('.price').value.trim();
-      if(!desc && !price){
-        tr.classList.add('print-hide');
-        emptyRows.push(tr);
-      }
-    });
-    const el = document.querySelector('.sheet');
-    el.classList.add('pdf-white-bg');
-    const invNr = document.getElementById('invoiceNumber').textContent.trim().replace(/\s+/g,'-');
-    const opts = {
-      margin: [8,8,8,8],
-      filename: `exportfactuur-${invNr}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    html2pdf().set(opts).from(el).save().then(()=>{
-      clientFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
-      emptyRows.forEach(tr=>tr.classList.remove('print-hide'));
-      el.classList.remove('pdf-white-bg');
-    });
   }
 
   // init
