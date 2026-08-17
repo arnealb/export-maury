@@ -417,13 +417,9 @@
           <label id="lblPaspoort" for="custPassport">Paspoort nr</label>
           <input type="text" id="custPassport">
         </div>
-        <div class="field" id="fieldStreet">
-          <label id="lblStraat" for="custStreet">Straat en huisnummer</label>
+        <div class="field full" id="fieldStreet">
+          <label id="lblStraat" for="custStreet">Adres</label>
           <input type="text" id="custStreet">
-        </div>
-        <div class="field" id="fieldPostal">
-          <label id="lblPostcode" for="custPostal">Postcode</label>
-          <input type="text" id="custPostal">
         </div>
         <div class="field" id="fieldCity">
           <label id="lblStad" for="custCity">Stad</label>
@@ -487,17 +483,17 @@
 <script>
   const translations = {
     nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
-        straat:"Straat en huisnummer", postcode:"Postcode", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
+        straat:"Adres", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
         thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
         vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", nietBetaald:"Niet betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
         naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
     fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
-        straat:"Rue et numéro", postcode:"Code postal", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
+        straat:"Adresse", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
         thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
         vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", nietBetaald:"Non payé", bankTitle:"Remboursement TVA (compte bancaire)",
         naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
     en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
-        straat:"Street and number", postcode:"Postal code", stad:"City", land:"Country", artikelen:"Items sold",
+        straat:"Address", stad:"City", land:"Country", artikelen:"Items sold",
         thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
         vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", nietBetaald:"Not paid", bankTitle:"VAT refund (bank account)",
         naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email"}
@@ -515,7 +511,6 @@
     document.getElementById('lblNaam').textContent = t.naam;
     document.getElementById('lblPaspoort').textContent = t.paspoort;
     document.getElementById('lblStraat').textContent = t.straat;
-    document.getElementById('lblPostcode').textContent = t.postcode;
     document.getElementById('lblStad').textContent = t.stad;
     document.getElementById('lblLand').textContent = t.land;
     document.getElementById('lblArtikelen').textContent = t.artikelen;
@@ -606,8 +601,8 @@
   document.getElementById('addRow').addEventListener('click', ()=>addRow(true));
 
   // hide empty client fields and empty item rows in the exported PDF
-  const clientFieldIds = ['fieldNaam','fieldPassport','fieldStreet','fieldPostal','fieldCity','fieldCountry'];
-  const clientInputMap = {fieldNaam:'custName', fieldPassport:'custPassport', fieldStreet:'custStreet', fieldPostal:'custPostal', fieldCity:'custCity', fieldCountry:'custCountry'};
+  const clientFieldIds = ['fieldNaam','fieldPassport','fieldStreet','fieldCity','fieldCountry'];
+  const clientInputMap = {fieldNaam:'custName', fieldPassport:'custPassport', fieldStreet:'custStreet', fieldCity:'custCity', fieldCountry:'custCountry'};
 
   window.addEventListener('beforeprint', ()=>{
     clientFieldIds.forEach(fid=>{
@@ -656,7 +651,6 @@
   // init
   applyLang('nl');
   applyShop();
-  addRow(false);
   addRow(false);
   recalc();
 </script>
