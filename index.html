@@ -83,6 +83,21 @@
     border-radius:3px;
   }
   .print-btn:hover{background:var(--brass-dark);border-color:var(--brass-dark);}
+  .secondary-btn{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  .secondary-btn:hover{background:var(--paper-dark);border-color:var(--ink-soft);color:var(--ink);}
+
+  .field.error input{border-bottom:1px solid var(--danger);}
+  .field-error-msg{
+    font-size:11.5px;
+    color:var(--danger);
+    margin-top:2px;
+    display:none;
+  }
+  .field.error .field-error-msg{display:block;}
 
   .head{
     padding:36px 44px 24px;
@@ -381,7 +396,8 @@
       </div>
     </div>
     <div class="toolbar-right">
-      <button class="print-btn" id="printOnlyBtn" onclick="window.print()">Afdrukken</button>
+      <button class="print-btn secondary-btn" id="newInvoiceBtn" onclick="startNewInvoice()">Nieuwe factuur</button>
+      <button class="print-btn" id="printOnlyBtn" onclick="handlePrint()">Afdrukken</button>
       <button class="print-btn" id="printBtn" onclick="downloadPdf()">PDF downloaden</button>
     </div>
   </div>
@@ -412,6 +428,7 @@
         <div class="field" id="fieldNaam">
           <label id="lblNaam" for="custName">Naam</label>
           <input type="text" id="custName">
+          <span class="field-error-msg" id="naamError">Vul de naam van de klant in</span>
         </div>
         <div class="field" id="fieldPassport">
           <label id="lblPaspoort" for="custPassport">Paspoort nr</label>
@@ -482,18 +499,18 @@
 
 <script>
   const translations = {
-    nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
-        straat:"Adres", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
+    nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", newInvoice:"Nieuwe factuur", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
+        straat:"Adres", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen", naamError:"Vul de naam van de klant in",
         thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
         vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", nietBetaald:"Niet betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
         naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
-    fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
-        straat:"Adresse", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
+    fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", newInvoice:"Nouvelle facture", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
+        straat:"Adresse", stad:"Ville", land:"Pays", artikelen:"Articles vendus", naamError:"Veuillez indiquer le nom du client",
         thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
         vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", nietBetaald:"Non payé", bankTitle:"Remboursement TVA (compte bancaire)",
         naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
-    en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
-        straat:"Address", stad:"City", land:"Country", artikelen:"Items sold",
+    en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", newInvoice:"New invoice", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
+        straat:"Address", stad:"City", land:"Country", artikelen:"Items sold", naamError:"Please enter the customer's name",
         thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
         vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", nietBetaald:"Not paid", bankTitle:"VAT refund (bank account)",
         naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email"}
@@ -507,6 +524,8 @@
     document.getElementById('docKind').textContent = t.docKind;
     document.getElementById('printBtn').textContent = t.print;
     document.getElementById('printOnlyBtn').textContent = t.printOnly;
+    document.getElementById('newInvoiceBtn').textContent = t.newInvoice;
+    document.getElementById('naamError').textContent = t.naamError;
     document.getElementById('lblKlantgegevens').textContent = t.klantgegevens;
     document.getElementById('lblNaam').textContent = t.naam;
     document.getElementById('lblPaspoort').textContent = t.paspoort;
@@ -590,6 +609,16 @@
     `;
     itemsBody.appendChild(tr);
     tr.querySelector('.price').addEventListener('input', recalc);
+    tr.querySelector('.price').addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        if(tr === itemsBody.lastElementChild) addRow(true);
+        else {
+          const next = tr.nextElementSibling;
+          if(next) next.querySelector('.desc-input').focus();
+        }
+      }
+    });
     tr.querySelector('.row-remove').addEventListener('click', ()=>{
       tr.remove();
       recalc();
@@ -615,7 +644,47 @@
     clientFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
   });
 
+  function validateForm(){
+    const naamField = document.getElementById('fieldNaam');
+    const naamInput = document.getElementById('custName');
+    if(!naamInput.value.trim()){
+      naamField.classList.add('error');
+      naamInput.focus();
+      return false;
+    }
+    naamField.classList.remove('error');
+    return true;
+  }
+
+  document.getElementById('custName').addEventListener('input', ()=>{
+    if(document.getElementById('custName').value.trim()){
+      document.getElementById('fieldNaam').classList.remove('error');
+    }
+  });
+
+  function handlePrint(){
+    if(!validateForm()) return;
+    window.print();
+  }
+
+  function startNewInvoice(){
+    document.getElementById('custName').value = '';
+    document.getElementById('custPassport').value = '';
+    document.getElementById('custStreet').value = '';
+    document.getElementById('custCity').value = '';
+    document.getElementById('custCountry').value = '';
+    document.getElementById('fieldNaam').classList.remove('error');
+    itemsBody.innerHTML = '';
+    rowCount = 0;
+    addRow(false);
+    recalc();
+    document.getElementById('invoiceDate').value = new Date().toISOString().slice(0,10);
+    applyShop();
+    document.getElementById('custName').focus();
+  }
+
   function downloadPdf(){
+    if(!validateForm()) return;
     clientFieldIds.forEach(fid=>{
       const wrap = document.getElementById(fid);
       const input = document.getElementById(clientInputMap[fid]);
