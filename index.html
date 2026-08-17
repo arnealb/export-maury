@@ -275,20 +275,19 @@
     margin-top:18px;
     justify-content:flex-end;
   }
-  .paid-toggle label{
+  .paid-toggle .paid-badge{
     display:flex;
     align-items:center;
     gap:8px;
     font-size:13px;
     font-weight:600;
+    font-family:'Inter',sans-serif;
     color:var(--paid);
-    cursor:pointer;
-    padding:8px 14px;
+    padding:8px 16px;
     border:1px solid var(--paid);
     border-radius:3px;
     background:var(--paid-bg);
   }
-  .paid-toggle input{width:16px;height:16px;}
 
   .refund-lines{
     display:flex;
@@ -331,11 +330,12 @@
   @media print{
     body{background:#fff;padding:0;}
     .toolbar{display:none;}
-    .sheet{border:none;box-shadow:none;max-width:100%;}
+    .sheet{border:none;box-shadow:none;max-width:100%;background:#fff;}
     .row-remove, .add-row{display:none !important;}
     .field input, .field select, table.items input{border-bottom:1px solid var(--line);}
-    .print-hide{display:none !important;}
   }
+  .print-hide{display:none !important;}
+  .pdf-white-bg, .pdf-white-bg .section, .pdf-white-bg .head{background:#fff !important;}
 </style>
 </head>
 <body>
@@ -377,11 +377,11 @@
     <div class="section">
       <div class="eyebrow" id="lblKlantgegevens">Klantgegevens</div>
       <div class="field-grid">
-        <div class="field">
+        <div class="field" id="fieldNaam">
           <label id="lblNaam" for="custName">Naam</label>
           <input type="text" id="custName">
         </div>
-        <div class="field">
+        <div class="field" id="fieldPassport">
           <label id="lblPaspoort" for="custPassport">Paspoort nr</label>
           <input type="text" id="custPassport">
         </div>
@@ -430,10 +430,9 @@
       </div>
 
       <div class="paid-toggle">
-        <label id="paidLabel" for="paidBox">
-          <input type="checkbox" id="paidBox">
+        <div class="paid-badge">
           <span id="lblBetaald">Betaald</span>
-        </label>
+        </div>
       </div>
     </div>
 
@@ -456,17 +455,17 @@
     nl:{docKind:"Exportfactuur", print:"PDF downloaden", printOnly:"Afdrukken", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
         straat:"Straat en huisnummer", postcode:"Postcode", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
         thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
-        vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
+        vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", nietBetaald:"Niet betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
         naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
     fr:{docKind:"Facture export", print:"Télécharger le PDF", printOnly:"Imprimer", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
         straat:"Rue et numéro", postcode:"Code postal", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
         thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
-        vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", bankTitle:"Remboursement TVA (compte bancaire)",
+        vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", nietBetaald:"Non payé", bankTitle:"Remboursement TVA (compte bancaire)",
         naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
     en:{docKind:"Export invoice", print:"Download PDF", printOnly:"Print", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
         straat:"Street and number", postcode:"Postal code", stad:"City", land:"Country", artikelen:"Items sold",
         thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
-        vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", bankTitle:"VAT refund (bank account)",
+        vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", nietBetaald:"Not paid", bankTitle:"VAT refund (bank account)",
         naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email"}
   };
 
@@ -570,38 +569,51 @@
 
   document.getElementById('addRow').addEventListener('click', ()=>addRow(true));
 
-  // hide empty address fields for the exported PDF
-  const addressFieldIds = ['fieldStreet','fieldPostal','fieldCity','fieldCountry'];
-  const addressInputMap = {fieldStreet:'custStreet', fieldPostal:'custPostal', fieldCity:'custCity', fieldCountry:'custCountry'};
+  // hide empty client fields and empty item rows in the exported PDF
+  const clientFieldIds = ['fieldNaam','fieldPassport','fieldStreet','fieldPostal','fieldCity','fieldCountry'];
+  const clientInputMap = {fieldNaam:'custName', fieldPassport:'custPassport', fieldStreet:'custStreet', fieldPostal:'custPostal', fieldCity:'custCity', fieldCountry:'custCountry'};
 
   window.addEventListener('beforeprint', ()=>{
-    addressFieldIds.forEach(fid=>{
+    clientFieldIds.forEach(fid=>{
       const wrap = document.getElementById(fid);
-      const input = document.getElementById(addressInputMap[fid]);
+      const input = document.getElementById(clientInputMap[fid]);
       if(!input.value.trim()) wrap.classList.add('print-hide');
     });
   });
   window.addEventListener('afterprint', ()=>{
-    addressFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
+    clientFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
   });
 
   function downloadPdf(){
-    addressFieldIds.forEach(fid=>{
+    clientFieldIds.forEach(fid=>{
       const wrap = document.getElementById(fid);
-      const input = document.getElementById(addressInputMap[fid]);
+      const input = document.getElementById(clientInputMap[fid]);
       wrap.classList.toggle('print-hide', !input.value.trim());
     });
+    const emptyRows = [];
+    itemsBody.querySelectorAll('tr').forEach(tr=>{
+      const desc = tr.querySelector('.desc-input').value.trim();
+      const price = tr.querySelector('.price').value.trim();
+      if(!desc && !price){
+        tr.classList.add('print-hide');
+        emptyRows.push(tr);
+      }
+    });
     const el = document.querySelector('.sheet');
+    el.classList.add('pdf-white-bg');
     const invNr = document.getElementById('invoiceNumber').textContent.trim().replace(/\s+/g,'-');
     const opts = {
-      margin: 0,
+      margin: [8,8,8,8],
       filename: `exportfactuur-${invNr}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     html2pdf().set(opts).from(el).save().then(()=>{
-      addressFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
+      clientFieldIds.forEach(fid=>document.getElementById(fid).classList.remove('print-hide'));
+      emptyRows.forEach(tr=>tr.classList.remove('print-hide'));
+      el.classList.remove('pdf-white-bg');
     });
   }
 
