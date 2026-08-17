@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exportfactuur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EF;
+    --paper-dark:#F1EADA;
+    --ink:#211D17;
+    --ink-soft:#5B554A;
+    --line:#D8CFB9;
+    --brass:#A9793F;
+    --brass-dark:#7C5A2E;
+    --paid:#3C6E58;
+    --paid-bg:#E3EEE7;
+    --danger:#B4463B;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper-dark);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:32px 16px 80px;
+  }
+  .sheet{
+    max-width:760px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow:0 1px 0 var(--line), 0 20px 40px -28px rgba(33,29,23,.35);
+  }
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    max-width:760px;
+    margin:0 auto 14px;
+    flex-wrap:wrap;
+  }
+  .toolbar-left{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .shop-select, .lang-select{
+    display:flex;
+    gap:6px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    padding:4px;
+    border-radius:4px;
+  }
+  .shop-select button, .lang-select button{
+    border:none;
+    background:transparent;
+    padding:8px 16px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:.02em;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .shop-select button.active, .lang-select button.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .print-btn{
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    padding:10px 18px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .print-btn:hover{background:var(--brass-dark);border-color:var(--brass-dark);}
+
+  .head{
+    padding:36px 44px 24px;
+    border-bottom:1px dashed var(--line);
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+  }
+  .brand{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:.01em;
+  }
+  .brand-meta{
+    margin-top:6px;
+    font-size:12.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+  }
+  .doc-tag{
+    text-align:right;
+  }
+  .doc-tag .kind{
+    font-family:'Fraunces',serif;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:var(--brass-dark);
+  }
+  .stub{
+    margin-top:10px;
+    display:inline-block;
+    border:1px solid var(--brass);
+    color:var(--brass-dark);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    padding:6px 10px;
+    letter-spacing:.04em;
+    background:repeating-linear-gradient(90deg, transparent 0 4px, var(--paper-dark) 4px 5px);
+  }
+  .doc-date{
+    margin-top:10px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .doc-date input{
+    border:none;
+    border-bottom:1px dotted var(--line);
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    color:var(--ink);
+    padding:2px 0;
+    width:130px;
+  }
+
+  .section{
+    padding:26px 44px;
+    border-bottom:1px dashed var(--line);
+  }
+  .section:last-of-type{border-bottom:none;}
+  .eyebrow{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:var(--brass-dark);
+    font-weight:600;
+    margin-bottom:14px;
+  }
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px 24px;
+  }
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field.full{grid-column:1/-1;}
+  .field label{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .field input, .field select{
+    border:none;
+    border-bottom:1px solid var(--line);
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    padding:6px 2px;
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-bottom:1px solid var(--brass);
+  }
+
+  table.items{
+    width:100%;
+    border-collapse:collapse;
+  }
+  table.items th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--ink-soft);
+    font-weight:600;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  table.items th.num, table.items td.num{text-align:right;}
+  table.items td{
+    padding:9px 4px;
+    border-bottom:1px dotted var(--line);
+    vertical-align:middle;
+  }
+  table.items input[type="text"]{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    padding:4px 2px;
+  }
+  table.items input[type="text"]:focus{outline:none;background:var(--paper-dark);}
+  table.items input.price{
+    width:100px;
+    border:none;
+    background:transparent;
+    text-align:right;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:4px 2px;
+  }
+  table.items input.price:focus{outline:none;background:var(--paper-dark);}
+  .row-remove{
+    border:none;
+    background:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-size:16px;
+    padding:2px 6px;
+    line-height:1;
+  }
+  .row-remove:hover{color:var(--danger);}
+  .add-row{
+    margin-top:14px;
+    border:1px dashed var(--line);
+    background:transparent;
+    color:var(--brass-dark);
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .add-row:hover{border-color:var(--brass);background:var(--paper-dark);}
+
+  .totals{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:8px;
+    margin-top:20px;
+  }
+  .totals .line{
+    display:flex;
+    justify-content:space-between;
+    gap:40px;
+    width:280px;
+    font-size:14px;
+    color:var(--ink-soft);
+  }
+  .totals .line.grand{
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    color:var(--ink);
+    border-top:1px solid var(--ink);
+    padding-top:10px;
+    margin-top:4px;
+  }
+  .totals .line span:last-child{font-family:'IBM Plex Mono',monospace;}
+  .totals .line.grand span:last-child{font-family:'Fraunces',serif;}
+
+  .paid-toggle{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:18px;
+    justify-content:flex-end;
+  }
+  .paid-toggle label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--paid);
+    cursor:pointer;
+    padding:8px 14px;
+    border:1px solid var(--paid);
+    border-radius:3px;
+    background:var(--paid-bg);
+  }
+  .paid-toggle input{width:16px;height:16px;}
+
+  .refund-lines{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .refund-lines .rline{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+  }
+  .refund-lines .rline .rlabel{
+    font-size:12px;
+    color:var(--ink-soft);
+    min-width:120px;
+  }
+  .refund-lines .rline .rblank{
+    flex:1;
+    border-bottom:1px dotted var(--line);
+    height:1px;
+  }
+
+  .footer{
+    padding:20px 44px 32px;
+    text-align:center;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:.05em;
+  }
+
+  @media (max-width:640px){
+    .field-grid{grid-template-columns:1fr;}
+    .head{flex-direction:column;}
+    .doc-tag{text-align:left;}
+    .section{padding:22px 20px;}
+    .head{padding:28px 20px 20px;}
+    table.items input.price{width:78px;}
+  }
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .toolbar{display:none;}
+    .sheet{border:none;box-shadow:none;max-width:100%;}
+    .row-remove, .add-row{display:none !important;}
+    .field input, .field select, table.items input{border-bottom:1px solid var(--line);}
+    .print-hide{display:none !important;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="shop-select" id="shopSelect">
+        <button data-shop="maury" class="active">Maury</button>
+        <button data-shop="timcoast">Timcoast</button>
+      </div>
+      <div class="lang-select" id="langSelect">
+        <button data-lang="nl" class="active">NL</button>
+        <button data-lang="fr">FR</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+    <button class="print-btn" id="printBtn" onclick="window.print()">Afdrukken / PDF</button>
+  </div>
+
+  <div class="sheet">
+    <div class="head">
+      <div>
+        <div class="brand" id="companyName">schoenhandel albrecht bv</div>
+        <div class="brand-meta" id="companyAddress">
+          Lippenslaan 338<br>
+          B-8300 Knokke-Heist<br>
+          info@maury.be — www.maury.be<br>
+          BTW BE 405.160.090
+        </div>
+      </div>
+      <div class="doc-tag">
+        <div class="kind" id="docKind">Exportfactuur</div>
+        <div class="stub" id="invoiceNumber">FCT-000000</div>
+        <div class="doc-date">
+          <input type="date" id="invoiceDate">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow" id="lblKlantgegevens">Klantgegevens</div>
+      <div class="field-grid">
+        <div class="field">
+          <label id="lblNaam" for="custName">Naam</label>
+          <input type="text" id="custName">
+        </div>
+        <div class="field">
+          <label id="lblPaspoort" for="custPassport">Paspoort nr</label>
+          <input type="text" id="custPassport">
+        </div>
+        <div class="field" id="fieldStreet">
+          <label id="lblStraat" for="custStreet">Straat en huisnummer</label>
+          <input type="text" id="custStreet">
+        </div>
+        <div class="field" id="fieldPostal">
+          <label id="lblPostcode" for="custPostal">Postcode</label>
+          <input type="text" id="custPostal">
+        </div>
+        <div class="field" id="fieldCity">
+          <label id="lblStad" for="custCity">Stad</label>
+          <input type="text" id="custCity">
+        </div>
+        <div class="field" id="fieldCountry">
+          <label id="lblLand" for="custCountry">Land</label>
+          <input type="text" id="custCountry">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow" id="lblArtikelen">Verkochte artikelen</div>
+      <table class="items">
+        <thead>
+          <tr>
+            <th id="thArtikel">Artikel</th>
+            <th class="num" style="width:110px;" id="thPrijs">Prijs (€)</th>
+            <th style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+      <button class="add-row" id="addRow">+ Artikel toevoegen</button>
+
+      <div class="totals">
+        <div class="line">
+          <span id="lblVat">BTW 21% (inbegrepen)</span>
+          <span id="vatAmount">€ 0,00</span>
+        </div>
+        <div class="line grand">
+          <span id="lblTotaal">Totaal</span>
+          <span id="totalAmount">€ 0,00</span>
+        </div>
+      </div>
+
+      <div class="paid-toggle">
+        <label id="paidLabel" for="paidBox">
+          <input type="checkbox" id="paidBox">
+          <span id="lblBetaald">Betaald</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow" id="lblBankTitle">Terugbetaling BTW (bankrekening)</div>
+      <div class="refund-lines">
+        <div class="rline"><span class="rlabel" id="lblNaamBank">Naam bank</span><span class="rblank"></span></div>
+        <div class="rline"><span class="rlabel" id="lblAdresBank">Adres bank</span><span class="rblank"></span></div>
+        <div class="rline"><span class="rlabel" id="lblIban">IBAN</span><span class="rblank"></span></div>
+        <div class="rline"><span class="rlabel" id="lblSwift">SWIFT code</span><span class="rblank"></span></div>
+        <div class="rline"><span class="rlabel" id="lblEmailKlant">E-mail klant</span><span class="rblank"></span></div>
+      </div>
+    </div>
+
+    <div class="footer" id="footerLine">www.maury.be</div>
+  </div>
+
+<script>
+  const translations = {
+    nl:{docKind:"Exportfactuur", print:"Afdrukken / PDF", klantgegevens:"Klantgegevens", naam:"Naam", paspoort:"Paspoort nr",
+        straat:"Straat en huisnummer", postcode:"Postcode", stad:"Stad", land:"Land", artikelen:"Verkochte artikelen",
+        thArtikel:"Artikel", thPrijs:"Prijs (€)", artikelPh:"Omschrijving artikel", addRow:"+ Artikel toevoegen",
+        vat:"BTW 21% (inbegrepen)", totaal:"Totaal", betaald:"Betaald", bankTitle:"Terugbetaling BTW (bankrekening)",
+        naamBank:"Naam bank", adresBank:"Adres bank", iban:"IBAN", swift:"SWIFT code", emailKlant:"E-mail klant"},
+    fr:{docKind:"Facture export", print:"Imprimer / PDF", klantgegevens:"Informations client", naam:"Nom", paspoort:"N° passeport",
+        straat:"Rue et numéro", postcode:"Code postal", stad:"Ville", land:"Pays", artikelen:"Articles vendus",
+        thArtikel:"Article", thPrijs:"Prix (€)", artikelPh:"Description de l'article", addRow:"+ Ajouter un article",
+        vat:"TVA 21% (incluse)", totaal:"Total", betaald:"Payé", bankTitle:"Remboursement TVA (compte bancaire)",
+        naamBank:"Nom de la banque", adresBank:"Adresse de la banque", iban:"IBAN", swift:"Code SWIFT", emailKlant:"E-mail du client"},
+    en:{docKind:"Export invoice", print:"Print / PDF", klantgegevens:"Customer details", naam:"Name", paspoort:"Passport no",
+        straat:"Street and number", postcode:"Postal code", stad:"City", land:"Country", artikelen:"Items sold",
+        thArtikel:"Item", thPrijs:"Price (€)", artikelPh:"Item description", addRow:"+ Add item",
+        vat:"VAT 21% (included)", totaal:"Total", betaald:"Paid", bankTitle:"VAT refund (bank account)",
+        naamBank:"Bank name", adresBank:"Bank address", iban:"IBAN", swift:"SWIFT code", emailKlant:"Customer email"}
+  };
+
+  let currentLang = "nl";
+
+  function applyLang(lang){
+    currentLang = lang;
+    const t = translations[lang];
+    document.getElementById('docKind').textContent = t.docKind;
+    document.getElementById('printBtn').textContent = t.print;
+    document.getElementById('lblKlantgegevens').textContent = t.klantgegevens;
+    document.getElementById('lblNaam').textContent = t.naam;
+    document.getElementById('lblPaspoort').textContent = t.paspoort;
+    document.getElementById('lblStraat').textContent = t.straat;
+    document.getElementById('lblPostcode').textContent = t.postcode;
+    document.getElementById('lblStad').textContent = t.stad;
+    document.getElementById('lblLand').textContent = t.land;
+    document.getElementById('lblArtikelen').textContent = t.artikelen;
+    document.getElementById('thArtikel').textContent = t.thArtikel;
+    document.getElementById('thPrijs').textContent = t.thPrijs;
+    document.getElementById('addRow').textContent = t.addRow;
+    document.getElementById('lblVat').textContent = t.vat;
+    document.getElementById('lblTotaal').textContent = t.totaal;
+    document.getElementById('lblBetaald').textContent = t.betaald;
+    document.getElementById('lblBankTitle').textContent = t.bankTitle;
+    document.getElementById('lblNaamBank').textContent = t.naamBank;
+    document.getElementById('lblAdresBank').textContent = t.adresBank;
+    document.getElementById('lblIban').textContent = t.iban;
+    document.getElementById('lblSwift').textContent = t.swift;
+    document.getElementById('lblEmailKlant').textContent = t.emailKlant;
+    document.querySelectorAll('#itemsBody .desc-input').forEach(inp=>inp.placeholder = t.artikelPh);
+    document.querySelectorAll('#langSelect button').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+  }
+
+  document.getElementById('langSelect').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-lang]');
+    if(!btn) return;
+    applyLang(btn.dataset.lang);
+  });
+
+  const shops = {
+    maury: {
+      name: "schoenhandel albrecht bv",
+      addressHtml: "Lippenslaan 338<br>B-8300 Knokke-Heist<br>info@maury.be — www.maury.be<br>BTW BE 405.160.090",
+      footer: "www.maury.be",
+      prefix: "MRY"
+    },
+    timcoast: {
+      name: "timcoast bv",
+      addressHtml: "Lippenslaan 338<br>B-8300 Knokke-Heist<br>BTW BE 867.736.165",
+      footer: "Timberland — Zilverpand 10, 8000 Brugge — 050/34.79.34",
+      prefix: "TMC"
+    }
+  };
+
+  let currentShop = "maury";
+
+  function generateInvoiceNumber(shopKey){
+    const prefix = shops[shopKey].prefix;
+    const now = new Date();
+    const y = now.getFullYear();
+    const rand = Math.floor(10000 + Math.random()*89999);
+    return `${prefix}-${y}-${rand}`;
+  }
+
+  function applyShop(shopKey){
+    currentShop = shopKey;
+    const s = shops[shopKey];
+    document.getElementById('companyName').textContent = s.name;
+    document.getElementById('companyAddress').innerHTML = s.addressHtml;
+    document.getElementById('footerLine').textContent = s.footer;
+    document.getElementById('invoiceNumber').textContent = generateInvoiceNumber(shopKey);
+    document.querySelectorAll('#shopSelect button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.shop===shopKey);
+    });
+  }
+
+  document.getElementById('shopSelect').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-shop]');
+    if(!btn) return;
+    applyShop(btn.dataset.shop);
+  });
+
+  const dateInput = document.getElementById('invoiceDate');
+  dateInput.value = new Date().toISOString().slice(0,10);
+
+  const itemsBody = document.getElementById('itemsBody');
+  let rowCount = 0;
+
+  function fmt(n){
+    return '€ ' + n.toLocaleString('nl-BE', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function recalc(){
+    let total = 0;
+    itemsBody.querySelectorAll('tr').forEach(tr=>{
+      const priceInput = tr.querySelector('.price');
+      const val = parseFloat((priceInput.value||'0').replace(',', '.'));
+      total += isNaN(val) ? 0 : val;
+    });
+    const vat = total - (total / 1.21);
+    document.getElementById('totalAmount').textContent = fmt(total);
+    document.getElementById('vatAmount').textContent = fmt(vat);
+  }
+
+  function addRow(focus=true){
+    rowCount++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="desc-input" placeholder="${translations[currentLang].artikelPh}"></td>
+      <td class="num"><input type="text" class="price" placeholder="0,00" inputmode="decimal"></td>
+      <td><button type="button" class="row-remove" title="Verwijderen">✕</button></td>
+    `;
+    itemsBody.appendChild(tr);
+    tr.querySelector('.price').addEventListener('input', recalc);
+    tr.querySelector('.row-remove').addEventListener('click', ()=>{
+      tr.remove();
+      recalc();
+    });
+    if(focus) tr.querySelector('.desc-input').focus();
+  }
+
+  document.getElementById('addRow').addEventListener('click', ()=>addRow(true));
+
+  // hide empty address fields when printing
+  const addressFieldIds = ['fieldStreet','fieldPostal','fieldCity','fieldCountry'];
+  const addressInputMap = {fieldStreet:'custStreet', fieldPostal:'custPostal', fieldCity:'custCity', fieldCountry:'custCountry'};
+
+  window.addEventListener('beforeprint', ()=>{
+    addressFieldIds.forEach(fid=>{
+      const wrap = document.getElementById(fid);
+      const input = document.getElementById(addressInputMap[fid]);
+      if(!input.value.trim()){
+        wrap.classList.add('print-hide');
+      }
+    });
+  });
+  window.addEventListener('afterprint', ()=>{
+    addressFieldIds.forEach(fid=>{
+      document.getElementById(fid).classList.remove('print-hide');
+    });
+  });
+
+  // init
+  applyLang('nl');
+  applyShop('maury');
+  addRow(false);
+  addRow(false);
+  recalc();
+</script>
+
+</body>
+</html>
