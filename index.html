@@ -254,19 +254,21 @@
     justify-content:space-between;
     gap:40px;
     width:280px;
-    font-size:14px;
-    color:var(--ink-soft);
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    color:var(--ink);
   }
   .totals .line.grand{
-    font-family:'Fraunces',serif;
-    font-size:22px;
-    color:var(--ink);
-    border-top:1px solid var(--ink);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink-soft);
+    border-top:1px solid var(--line);
     padding-top:10px;
     margin-top:4px;
   }
-  .totals .line span:last-child{font-family:'IBM Plex Mono',monospace;}
-  .totals .line.grand span:last-child{font-family:'Fraunces',serif;}
+  .totals .line span:last-child{font-family:'Fraunces',serif;}
+  .totals .line.grand span:last-child{font-family:'IBM Plex Mono',monospace;}
 
   .paid-toggle{
     display:flex;
@@ -306,12 +308,12 @@
   .summary-row.compact .totals .line{
     width:auto;
     gap:8px;
-    font-size:13px;
+    font-size:16px;
   }
   .summary-row.compact .totals .line.grand{
     border-top:none;
     padding-top:0;
-    font-size:16px;
+    font-size:13px;
   }
   .summary-row.compact .paid-toggle{
     margin-top:0;
@@ -595,6 +597,7 @@
       tr.remove();
       recalc();
     });
+    recalc();
     if(focus) tr.querySelector('.desc-input').focus();
   }
 
